@@ -1,0 +1,15 @@
+language: python
+python:
+  - "3.4"
+  - "3.5"
+  - "3.5-dev" # 3.5 development branch
+script: make test
+addons:
+  apt:
+    packages:
+      - busybox
+notifications:
+  email:
+    recipients:
+      - barberio@fb.com
+      - pallotron@fb.com
