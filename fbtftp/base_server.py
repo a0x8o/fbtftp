@@ -7,6 +7,7 @@
 # of patent rights can be found in the PATENTS file in the same directory.
 
 import collections
+import ipaddress
 import logging
 import select
 import socket
@@ -199,7 +200,13 @@ class BaseServer:
         self._retries = retries
         self._timeout = timeout
         self._server_stats_callback = server_stats_callback
-        self._listener = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        # the format of the peer tuple is different for v4 and v6
+        self._family = socket.AF_INET6
+        if isinstance(
+            ipaddress.ip_address(self._address), ipaddress.IPv4Address
+        ):
+            self._family = socket.AF_INET
+        self._listener = socket.socket(self._family, socket.SOCK_DGRAM)
         self._listener.setblocking(0)  # non-blocking
         self._listener.bind((address, port))
         self._epoll = select.epoll()
@@ -307,11 +314,12 @@ class BaseServer:
             return
 
         path = tokens[0]
-        options = {
-            'mode': tokens[1].lower(),
-            'default_timeout': self._timeout,
-            'retries': self._retries,
-        }
+        options = collections.OrderedDict([
+            ('mode', tokens[1].lower()),
+            ('default_timeout', self._timeout),
+            ('retries', self._retries)
+        ]
+        )
         pos = 2
         while pos < len(tokens):
             options[tokens[pos].lower()] = tokens[pos + 1]
